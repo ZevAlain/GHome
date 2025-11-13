@@ -1,0 +1,53 @@
+name: Generate AutoUpdater.NET XML
+
+on:
+  release:
+    types: [published] # 当有新的 Release 发布时触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get latest release info
+        id: release_info
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data: release } = await github.rest.repos.getLatestRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            const asset = release.assets.find(a => a.name.endsWith('.zip')); // 找到.zip资源文件
+            if (!asset) {
+              core.setFailed('No .zip asset found in the latest release.');
+              return;
+            }
+            core.setOutput('version', release.tag_name.replace('v', ''));
+            core.setOutput('url', asset.browser_download_url);
+            core.setOutput('changelog', release.body);
+
+      - name: Create update.xml
+        run: |
+          # 对 changelog 内容进行 XML 转义
+          changelog_escaped=$(echo "${{ steps.release_info.outputs.changelog }}" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g; s/'"'"'/\&apos;/g;')
+          
+          echo '<?xml version="1.0" encoding="UTF-8"?>' > update.xml
+          echo '<item>' >> update.xml
+          echo "    <version>${{ steps.release_info.outputs.version }}</version>" >> update.xml
+          echo "    <url>${{ steps.release_info.outputs.url }}</url>" >> update.xml
+          echo "    <changelog><![CDATA[${{ steps.release_info.outputs.changelog }}]]></changelog>" >> update.xml
+          echo '    <mandatory>false</mandatory>' >> update.xml
+          echo '</item>' >> update.xml
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages # 将会把文件推送到 gh-pages 分支
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          # 只推送 update.xml 文件
+          force_orphan: true
+          cname: '' # 如果你有自定义域名
