@@ -7,9 +7,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     permissions:
-      contents: write
+      contents: write # 确保有写入权限来推送 gh-pages 分支
 
     steps:
       - name: Get latest release info
@@ -21,25 +20,29 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
             });
-            const asset = release.assets.find(a => a.name.endsWith('.zip')); // 找到.zip资源文件
+
+            // 找到以 .zip 结尾的资源文件
+            const asset = release.assets.find(a => a.name.endsWith('.zip'));
             if (!asset) {
               core.setFailed('No .zip asset found in the latest release.');
               return;
             }
+
+            // 输出版本号 (去掉'v'前缀)
             core.setOutput('version', release.tag_name.replace('v', ''));
+            // 输出 .zip 文件的直接下载链接
             core.setOutput('url', asset.browser_download_url);
-            core.setOutput('changelog', release.body);
+            // 输出 Release 页面的 URL 作为 changelog
+            core.setOutput('changelog_url', release.html_url);
 
       - name: Create update.xml
         run: |
-          # 对 changelog 内容进行 XML 转义
-          changelog_escaped=$(echo "${{ steps.release_info.outputs.changelog }}" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g; s/'"'"'/\&apos;/g;')
-          
           echo '<?xml version="1.0" encoding="UTF-8"?>' > update.xml
           echo '<item>' >> update.xml
           echo "    <version>${{ steps.release_info.outputs.version }}</version>" >> update.xml
           echo "    <url>${{ steps.release_info.outputs.url }}</url>" >> update.xml
-          echo "    <changelog><![CDATA[${{ steps.release_info.outputs.changelog }}]]></changelog>" >> update.xml
+          # 关键修改：直接使用 Release 页面的 URL
+          echo "    <changelog>${{ steps.release_info.outputs.changelog_url }}</changelog>" >> update.xml
           echo '    <mandatory>false</mandatory>' >> update.xml
           echo '</item>' >> update.xml
 
@@ -47,10 +50,10 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
-          publish_branch: gh-pages # 将会把文件推送到 gh-pages 分支
+          publish_dir: . # 发布当前目录
+          publish_branch: gh-pages # 推送到 gh-pages 分支
+          # 确保只推送 update.xml 文件，并覆盖旧文件
+          # 移除 force_orphan: true, 采用更温和的更新方式
+          keep_files: false # 每次推送前清理旧文件，确保分支上只有最新的 update.xml
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
-          # 只推送 update.xml 文件
-          force_orphan: true
-          cname: '' # 如果你有自定义域名
