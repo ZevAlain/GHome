@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<item>
+    <version>0.0.9</version>
+    <url>https://github.com/ZevAlain/GHome/releases/download/0.0.9/GHome.zip</url>
+    <changelog><![CDATA[更新日志
+1.支持在线更新]]></changelog>
+    <mandatory>false</mandatory>
+</item>
