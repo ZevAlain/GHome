@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <item>
-    <version>0.0.9</version>
-    <url>https://github.com/ZevAlain/GHome/releases/download/0.0.9/GHome.zip</url>
-    <changelog>https://github.com/ZevAlain/GHome/releases/tag/0.0.9</changelog>
+    <version>0.1.0</version>
+    <url>https://github.com/ZevAlain/GHome/releases/download/0.1.0/GHome.zip</url>
+    <changelog>https://github.com/ZevAlain/GHome/releases/tag/0.1.0</changelog>
     <mandatory>false</mandatory>
 </item>
